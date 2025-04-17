@@ -38,7 +38,7 @@ class PDFKit extends pdfkit {
 		return PDFKit.createTable(data, headers);
 	}
 
-	public table(table: Table<any>, options: TableOptions = {}) {
+	public table(table: Table<any>, options: TableOptions = {}): this {
 		const { width, border, margins, x, y, forceBorderInContinue,
 			cell: cellAppearance,
 			header: headerAppearance,
@@ -57,7 +57,7 @@ class PDFKit extends pdfkit {
 		const groupedSummary = prepareGroupedSummaries(this, table.groupedSummary, table.aggreagatesMap, columns, { width, margins, border, cell: groupedSummaryAppearance });
 		let current = data.next();
 		let next = data.next();
-		const EMPTY_TEXT = "No Data";
+		const EMPTY_TEXT = table.emptyText;
 
 
 		let heightRow = current.done ? getEmptyHeight(this, EMPTY_TEXT, { width, border, margins, cell: cellAppearance }) : getRowHeight(this, current.value, columns, { margins, border, cell: cellAppearance });
@@ -72,7 +72,7 @@ class PDFKit extends pdfkit {
 		printHeaders(this, headers, heightHeader, { width, border, margins, cell: headerAppearance });
 		if (current.done) {
 			printEmpty(this, EMPTY_TEXT, heightRow, { width, margins, cell: cellAppearance, border });
-			return;
+			return this;
 		}
 
 		while (!current.done) {
@@ -109,6 +109,8 @@ class PDFKit extends pdfkit {
 
 		groupedSummary.print(heightSummary, current, true);
 		summary.print(summary.getHeight());
+
+		return this;
 	}
 }
 

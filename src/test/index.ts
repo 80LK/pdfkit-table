@@ -100,13 +100,21 @@ function createPdf(stream: NodeJS.WritableStream) {
 		})
 		.addGroupedSummary({
 			title: "Flags",
-			grouped: ["flags"],
+			grouped: ["code", "flags"],
+			headers: [{ value: "peoples", formats: { number: { fixed: 0 } } }],
+		})
+		.addGroupedSummary({
+			title: "join",
+			empty: '-',
+			joiner: '-',
+			grouped: ["code", "flags"],
 			headers: [{ value: "peoples", formats: { number: { fixed: 0 } } }],
 		})
 		.addGroupedSummary({
 			title: "Code",
 			grouped: ["code"],
 			headers: [{ value: "owner.age", formats: { number: { fixed: 2 } } }],
+			empty: '-'
 		})
 		.setAggregate("code", (next, state: Record<string, number> = {}) => {
 			const s_code = next.toString();
@@ -129,12 +137,15 @@ function createPdf(stream: NodeJS.WritableStream) {
 			(next, state: AVG = { count: 0, value: 0 }) => ({ count: state.count + 1, value: state.value + next }),
 			state => state.value / state.count
 		);
-	pdf.table(table, {
-		// font: 9,
-		// border: 1
-		// forceBorderInContinue: true,
-		// margins: { h: 3, v: 0 },
-	});
+
+
+
+	const empty_table = pdf.createTable<any>([], [{ value: "0", title: "Header 0" }, { value: "1", title: "Header 1" }, { value: "2", title: "Header 2" }]);
+	pdf
+		.table(empty_table).text(" ")
+		.table(empty_table.setEmtyText("Not have data")).text(" ")
+		.table(table);
+
 
 	pdf.end();
 

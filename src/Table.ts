@@ -11,6 +11,7 @@ class Table<V extends Value = any> {
 	private _summary: Summary<V> | null = null;
 	private _groupedSummary: GroupedSummary<V>[] = [];
 	private _aggs: AggreagatesMap<V> = new Map();
+	private _emptyText: string = "No Data";
 
 	constructor(data: V[], headers: Header<V, ValueKeys<V>>[]) {
 		this._data = data;
@@ -31,6 +32,7 @@ class Table<V extends Value = any> {
 		}
 	}
 	public get data() { return this._dataIterator(); }
+	public get emptyText() { return this._emptyText; }
 
 
 	public setGrouped(grouped: Grouped<V>) {
@@ -67,6 +69,11 @@ class Table<V extends Value = any> {
 	}
 	public getAggregate(header: ValueKeys<V>): Aggregate<any, any> | null {
 		return this._aggs.get(header) ?? null;
+	}
+
+	public setEmtyText(text: string) {
+		this._emptyText = text;
+		return this;
 	}
 }
 
