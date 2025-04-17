@@ -40,8 +40,8 @@ function getValue<V extends Value, K extends ValueKeys<V>>(obj: V, key: K | stri
 
 	return value;
 }
-function getHeightText(pdf: PDFKit, value: string, { width, margins, cell }: Pick<PreparedTableOptions, "margins" | "cell" | "width">) {
-	return pdf.font(cell.font.src, cell.font.size).heightOfString(value, {
+function getHeightText(pdf: PDFKit, value: string, { width, margins, font }: Pick<PreparedTableOptions, "margins" | "width"> & { font: PreparedTableOptions['cell']['font'] }) {
+	return pdf.font(font.src, font.size).heightOfString(value, {
 		width: width - margins.left - margins.right,
 	}) + margins.top + margins.bottom
 }
@@ -63,8 +63,8 @@ function stringifyValue(value: BaseValue, formats: Formats = {}) {
 }
 function printText(pdf: PDFKit, value: string, height: number, align: Align, { width, margins, cell }: Pick<PreparedTableOptions, "width" | "cell" | "margins">) {
 	const w = width - margins.left - margins.right;
-	const heightInLine = getHeightText(pdf, value, { width: Infinity, margins: { left: 0, right: 0, top: 0, bottom: 0 }, cell });
-	const heightText = getHeightText(pdf, value, { width: w, margins: { left: 0, right: 0, top: 0, bottom: 0 }, cell });
+	const heightInLine = getHeightText(pdf, value, { width: Infinity, margins: { left: 0, right: 0, top: 0, bottom: 0 }, font: cell.font });
+	const heightText = getHeightText(pdf, value, { width: w, margins: { left: 0, right: 0, top: 0, bottom: 0 }, font: cell.font });
 	const free_space = height - heightText - margins.top - margins.bottom;
 	const { x, y } = pdf;
 
@@ -85,7 +85,7 @@ function printText(pdf: PDFKit, value: string, height: number, align: Align, { w
 
 function getRowHeight(pdf: PDFKit, value: Value | null, columns: PreparedHeaderWithValue<any, any>[], { margins, cell, border }: Pick<PreparedTableOptions, "border" | "margins" | "cell">) {
 	if (value == null) return 0;
-	return columns.reduce((r, h) => Math.max(r, getHeightText(pdf, stringifyValue(getValue(value, h.value), h.formats), { width: h.width, margins, cell })), 0) + border.width;
+	return columns.reduce((r, h) => Math.max(r, getHeightText(pdf, stringifyValue(getValue(value, h.value), h.formats), { width: h.width, margins, font: cell.font })), 0) + border.width;
 }
 function printRow(pdf: PDFKit, item: Value, columns: PreparedHeaderWithValue<any, any>[], height: number, bottomBorder: boolean, { width, margins, cell, border }: Pick<PreparedTableOptions, "border" | "width" | "margins" | "cell">) {
 	pdf.rect(pdf.x, pdf.y, width, height).fill(border.color);
@@ -105,7 +105,7 @@ function printRow(pdf: PDFKit, item: Value, columns: PreparedHeaderWithValue<any
 }
 
 function getEmptyHeight(pdf: PDFKit, text: string, { width, margins, cell, border }: Pick<PreparedTableOptions, "border" | "width" | "margins" | "cell">) {
-	return getHeightText(pdf, text, { width, margins, cell }) + border.width;
+	return getHeightText(pdf, text, { width, margins, font: cell.font }) + border.width;
 }
 function printEmpty(pdf: PDFKit, text: string, height: number, { width, margins, cell, border }: Pick<PreparedTableOptions, "border" | "width" | "margins" | "cell">) {
 	pdf.rect(pdf.x, pdf.y, width, height).fill(border.color);

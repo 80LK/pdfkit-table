@@ -1,14 +1,15 @@
 import pdfkit from "pdfkit";
 import { Table } from "./Table";
 import { equalFieldItems, getEmptyHeight, getRowHeight, printEmpty, printRow, Value, ValueKeys } from "./Value";
-import { Header, PreparedHeader, prepareHeaders, printHeaders } from "./Header";
+import { getHeightTitle, Header, PreparedHeader, prepareHeaders, printHeaders, printTitle } from "./Header";
 import { PreparedTableOptions, prepareTableOptions, TableOptions } from "./TableOptions";
 import { getGroupedHeight, PreparedGrouped, printGrouped } from "./Grouped";
 import { prepareGroupedSummaries, prepareSummary } from "./Summary";
 
-function addPage(pdf: PDFKit, headers: PreparedHeader<any, any>[], heightHeader: number, grouped: PreparedGrouped<any> | null, current: Value | null, next: Value | null, { width, border, margins, header: headerAppearance, grouped: groupedAppearance, x }: Pick<PreparedTableOptions, "width" | "grouped" | "header" | "border" | "margins" | "x">) {
+function addPage(pdf: PDFKit, headers: PreparedHeader<any, any>[], heightHeader: number, grouped: PreparedGrouped<any> | null, current: Value | null, next: Value | null, title: string | null, heightTitle: number, { title: titleAppearance, width, border, margins, header: headerAppearance, grouped: groupedAppearance, x }: Pick<PreparedTableOptions, "width" | "grouped" | "header" | "border" | "margins" | "x" | "title">) {
 	pdf.addPage();
 	pdf.x = x;
+	printTitle(pdf, title, heightTitle, { width, margins, title: titleAppearance });
 	printHeaders(pdf, headers, heightHeader, { width, border, margins, cell: headerAppearance });
 
 	if (grouped && equalFieldItems(grouped, current, next))
@@ -44,15 +45,16 @@ class PDFKit extends pdfkit {
 			header: headerAppearance,
 			grouped: groupedAppearance,
 			summary: summaryAppearance,
-			groupedSummary: groupedSummaryAppearance
+			groupedSummary: groupedSummaryAppearance,
+			title: titleAppearance,
 		} = prepareTableOptions(this, options);
 		const { headers, columns, maxHeightCell } = prepareHeaders(this, table.headers, { width, border, cell: headerAppearance, margins });
 		const heightHeader = maxHeightCell + border.width * 2;
 		const heightLimit = this.page.height - this.page.margins.bottom;
 		[this.x, this.y] = [x, y];
 
-
-		const { data, grouped } = table;
+		const { data, grouped, title } = table;
+		const heightTitle = getHeightTitle(this, title, { width, margins, title: titleAppearance });
 		const summary = prepareSummary(this, table.summary, table.aggreagatesMap, columns, { border, margins, cell: summaryAppearance, width });
 		const groupedSummary = prepareGroupedSummaries(this, table.groupedSummary, table.aggreagatesMap, columns, { width, margins, border, cell: groupedSummaryAppearance });
 		let current = data.next();
@@ -62,13 +64,14 @@ class PDFKit extends pdfkit {
 
 		let heightRow = current.done ? getEmptyHeight(this, EMPTY_TEXT, { width, border, margins, cell: cellAppearance }) : getRowHeight(this, current.value, columns, { margins, border, cell: cellAppearance });
 		let heightGrouped = getGroupedHeight(this, grouped, null, current.value, { width, margins, cell: groupedAppearance, border });
-		let heightSummary = groupedSummary.getHeight(null as any, current.value);
+		let heightSummary = groupedSummary.getHeight(current.value, next.value);
 
-		if (this.y + heightHeader + heightRow + heightGrouped > heightLimit) {
+		if (this.y + heightTitle + heightHeader + heightRow + heightGrouped + heightSummary.all > heightLimit) {
 			this.addPage();
 			this.x = x;
 		}
 
+		printTitle(this, title, heightTitle, { width, margins, title: titleAppearance });
 		printHeaders(this, headers, heightHeader, { width, border, margins, cell: headerAppearance });
 		if (current.done) {
 			printEmpty(this, EMPTY_TEXT, heightRow, { width, margins, cell: cellAppearance, border });
@@ -94,10 +97,11 @@ class PDFKit extends pdfkit {
 			groupedSummary.print(heightSummary, current.value, forceBorderInContinue || canPrintNextRow);
 
 			if (!canPrintNextRow)
-				addPage(this, headers, heightHeader, grouped, current.value, next.value, {
+				addPage(this, headers, heightHeader, grouped, current.value, next.value, title, heightTitle, {
 					width, margins, border, x,
 					grouped: groupedAppearance,
-					header: headerAppearance
+					header: headerAppearance,
+					title: titleAppearance,
 				});
 
 			current = next;

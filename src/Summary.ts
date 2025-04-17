@@ -112,7 +112,7 @@ function prepareSummary(pdf: PDFKit, summary: Summary<any> | null, aggMaps: Aggr
 		getHeight() {
 			const value = getSummaryValue();
 			return columns.reduce((r, h) => {
-				const height = getHeightText(pdf, h.value ? stringifyValue(value[h.value] || EMPTY_TEXT, h.formats) : h.raw_value || EMPTY_TEXT, { width: h.width, margins, cell });
+				const height = getHeightText(pdf, h.value ? stringifyValue(value[h.value] || EMPTY_TEXT, h.formats) : h.raw_value || EMPTY_TEXT, { width: h.width, margins, font: cell.font });
 				return Math.max(r, height)
 			}, 0) + border.width;
 		},
@@ -185,7 +185,7 @@ function prepareGroupedSummary(pdf: PDFKit, summary: GroupedSummary<any>, aggMap
 					: h.raw_value == TITLE_REPLACER
 						? `${summary.title}: ${summary.grouped.map(h => value[typeof h == "object" ? h.value : h]).join(JOINER)}`
 						: h.raw_value || EMPTY_TEXT;
-				const height = getHeightText(pdf, text, { width: h.width, margins, cell });
+				const height = getHeightText(pdf, text, { width: h.width, margins, font: cell.font });
 				return Math.max(r, height)
 			}, 0) + border.width;
 

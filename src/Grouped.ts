@@ -17,7 +17,7 @@ function getGroupedHeight(pdf: PDFKit, grouped: PreparedGrouped<any> | null, pre
 
 	const raw_value = getValue(item, grouped.value);
 	const value = stringifyValue(raw_value, grouped.formats);
-	const height = getHeightText(pdf, value, { width, margins, cell }) + border.width;
+	const height = getHeightText(pdf, value, { width, margins, font: cell.font }) + border.width;
 	if (prevItem != null) {
 		const prev_raw_value = getValue(prevItem, grouped.value);
 		const prev_value = stringifyValue(prev_raw_value, grouped.formats);

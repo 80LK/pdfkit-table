@@ -127,7 +127,7 @@ function setHeadersWidth(headers: Header<any, any>[], auto_width: number, border
 
 function calculateMaxHeight(pdf: PDFKit, headers: PreparedHeader<any, any>[], { margins, border, cell }: Pick<PreparedTableOptions, "margins" | "border" | "cell">): number {
 	return headers.reduce((r, header) => {
-		const height = getHeightText(pdf, header.title, { width: header.width, margins, cell });
+		const height = getHeightText(pdf, header.title, { width: header.width, margins, font: cell.font });
 
 		if (isHeaderWithChilds(header))
 			return Math.max(r, height + border.width + calculateMaxHeight(pdf, header.headers, { border, margins, cell }));
@@ -141,7 +141,7 @@ function setHeadersHeight(pdf: PDFKit, headers: PreparedHeader<any, any>[], heig
 		if (isHeaderWithChilds(header)) {
 			const deep = deepLevels(header, (header) => header.headers);
 			const auto_height = (height - border.width * deep) / (deep + 1);
-			const hHeight = Math.max(auto_height, getHeightText(pdf, header.title, { width: header.width, margins, cell }));
+			const hHeight = Math.max(auto_height, getHeightText(pdf, header.title, { width: header.width, margins, font: cell.font }));
 
 			setHeadersHeight(pdf, header.headers, height - hHeight - border.width, { margins, border, cell });
 			header.height = hHeight;
@@ -198,6 +198,18 @@ function printHeaders(pdf: PDFKit, items: PreparedHeader<any, any>[], height: nu
 	pdf.x = x;
 }
 
+function getHeightTitle(pdf: PDFKit, title: string | null, { width, margins, title: titleAppearance }: Pick<PreparedTableOptions, "width" | "margins" | "title">) {
+	if (title == null) return 0;
+	return getHeightText(pdf, title, { width, margins, font: titleAppearance.font })
+}
+
+function printTitle(pdf: PDFKit, title: string | null, height: number, { width, margins, title: titleAppearance }: Pick<PreparedTableOptions, "width" | "margins" | "title">) {
+	if (!title) return;
+
+	printText(pdf, title, height, titleAppearance.align, { width, cell: titleAppearance, margins });
+	pdf.y += height;
+}
+
 export {
 	ALIGN,
 	SIZE,
@@ -207,6 +219,9 @@ export {
 
 	prepareHeaders,
 	printHeaders,
+
+	getHeightTitle,
+	printTitle,
 };
 
 export type {

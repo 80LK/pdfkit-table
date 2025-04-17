@@ -3,6 +3,7 @@ import PDFKit from "../index";
 import generateArray from "./utils/generateArray";
 import Company from "./Company";
 import { createServer } from "http";
+import { ALIGN } from "../Header";
 
 if (process.argv.indexOf("--server") != -1 || process.argv.indexOf("-s") != -1) {
 	const server = createServer((_, res) => {
@@ -140,9 +141,9 @@ function createPdf(stream: NodeJS.WritableStream) {
 
 	const empty_table = pdf.createTable<any>([], [{ value: "0", title: "Header 0" }, { value: "1", title: "Header 1" }, { value: "2", title: "Header 2" }]);
 	pdf
-		.table(empty_table).text(" ")
-		.table(empty_table.setEmptyText("Not have data")).text(" ")
-		.table(table);
+		.table(empty_table.setTitle("Test Title"), { title: { align: ALIGN.CENTER } }).text(" ")
+		.table(empty_table.setTitle(null).setEmptyText("Not have data")).text(" ")
+		.table(table.setTitle("Companies"));
 
 
 	pdf.end();

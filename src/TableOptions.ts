@@ -1,3 +1,4 @@
+import { ALIGN, Align } from "./Header";
 import type PDFKit from "./index";
 
 // BORDER
@@ -85,6 +86,14 @@ function prepareCellAppearance(def: PreparedCellAppearance, appearance: CellAppe
 	return def;
 }
 
+interface TitleAppearance extends CellAppearance { align?: Align }
+interface PreparedTitleAppearance extends PreparedCellAppearance {
+	align: Align;
+};
+function prepareTitleAppearance(def: PreparedTitleAppearance, appearance?: TitleAppearance): PreparedTitleAppearance {
+	if (!appearance) return def;
+	return Object.assign(prepareCellAppearance(def, appearance), { align: appearance.align ?? def.align });
+}
 
 interface TableOptions extends CellAppearance {
 	x?: number;
@@ -99,6 +108,8 @@ interface TableOptions extends CellAppearance {
 	grouped?: CellAppearance;
 	summary?: CellAppearance;
 	groupedSummary?: CellAppearance;
+
+	title?: TitleAppearance;
 
 	forceBorderInContinue?: boolean;
 }
@@ -115,6 +126,7 @@ interface PreparedTableOptions {
 	grouped: PreparedCellAppearance;
 	summary: PreparedCellAppearance;
 	groupedSummary: PreparedCellAppearance;
+	title: PreparedTitleAppearance;
 
 	forceBorderInContinue: boolean;
 }
@@ -141,6 +153,8 @@ function prepareTableOptions(pdf: PDFKit, options: TableOptions): PreparedTableO
 		cell, header, summary,
 		grouped: prepareCellAppearance(header, options.grouped),
 		groupedSummary: prepareCellAppearance(summary, options.groupedSummary),
+
+		title: prepareTitleAppearance(Object.assign({ align: ALIGN.LEFT }, { font: header.font, color: "black", background: "white" }), options.title),
 
 		forceBorderInContinue: options.forceBorderInContinue ?? false
 	}
