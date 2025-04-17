@@ -1,0 +1,22 @@
+{
+  "name": "pdfkit-table",
+  "version": "0.0.1",
+  "author": "80LK",
+  "description": "",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx src/test/index.ts"
+  },
+  "dependencies": {
+    "pdfkit": "^0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "@types/pdfkit": "^0.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}
