@@ -17,21 +17,19 @@ if (process.argv.indexOf("--server") != -1 || process.argv.indexOf("-s") != -1) 
 }
 
 function fillPage(pdf: PDFKit) {
-	return () => {
-		pdf.rect(pdf.page.margins.left, 0, pdf.page.width - pdf.page.margins.left - pdf.page.margins.right, pdf.page.height).fill("lightgreen")
-			.rect(0, pdf.page.margins.top, pdf.page.width, pdf.page.height - pdf.page.margins.bottom - pdf.page.margins.top).fill("pink")
-			.rect(pdf.page.margins.left, pdf.page.margins.top, pdf.page.width - pdf.page.margins.left - pdf.page.margins.right, pdf.page.height - pdf.page.margins.bottom - pdf.page.margins.top).fill("lightskyblue")
-			.fillColor("black")
-	};
+	pdf.rect(pdf.page.margins.left, 0, pdf.page.width - pdf.page.margins.left - pdf.page.margins.right, pdf.page.height).fill("lightgreen")
+		.rect(0, pdf.page.margins.top, pdf.page.width, pdf.page.height - pdf.page.margins.bottom - pdf.page.margins.top).fill("pink")
+		.rect(pdf.page.margins.left, pdf.page.margins.top, pdf.page.width - pdf.page.margins.left - pdf.page.margins.right, pdf.page.height - pdf.page.margins.bottom - pdf.page.margins.top).fill("lightskyblue")
+		.fillColor("black")
 }
 
 interface AVG { value: number; count: number; }
 function createPdf(stream: NodeJS.WritableStream) {
 	const pdf = new PDFKit();
 	pdf.pipe(stream);
-	pdf.on("pageAdded", fillPage(pdf))
+	pdf.on("pageAdded", () => fillPage(pdf))
 
-	fillPage(pdf)();
+	fillPage(pdf);
 
 	const table = pdf.createTable(
 		[
@@ -143,7 +141,7 @@ function createPdf(stream: NodeJS.WritableStream) {
 	const empty_table = pdf.createTable<any>([], [{ value: "0", title: "Header 0" }, { value: "1", title: "Header 1" }, { value: "2", title: "Header 2" }]);
 	pdf
 		.table(empty_table).text(" ")
-		.table(empty_table.setEmtyText("Not have data")).text(" ")
+		.table(empty_table.setEmptyText("Not have data")).text(" ")
 		.table(table);
 
 

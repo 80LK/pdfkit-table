@@ -71,7 +71,7 @@ class Table<V extends Value = any> {
 		return this._aggs.get(header) ?? null;
 	}
 
-	public setEmtyText(text: string) {
+	public setEmptyText(text: string) {
 		this._emptyText = text;
 		return this;
 	}
