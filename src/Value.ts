@@ -1,5 +1,5 @@
 import { isGrouped, PreparedGrouped } from "./Grouped";
-import { ALIGN, Align, Formats, PreparedHeader, PreparedHeaderWithValue } from "./Header";
+import { ALIGN, Align, Formats, PreparedHeaderWithValue } from "./Header";
 import type PDFKit from "./index";
 import { PreparedTableOptions } from "./TableOptions";
 

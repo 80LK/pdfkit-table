@@ -3,7 +3,6 @@ import PDFKit from "../index";
 import generateArray from "./utils/generateArray";
 import Company from "./Company";
 import { createServer } from "http";
-import { ALIGN, Formats } from "../Header";
 
 if (process.argv.indexOf("--server") != -1 || process.argv.indexOf("-s") != -1) {
 	const server = createServer((_, res) => {
