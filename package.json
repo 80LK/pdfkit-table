@@ -8,7 +8,7 @@
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsx scripts/build.ts",
     "test": "tsx src/test/index.ts"
   },
   "dependencies": {
