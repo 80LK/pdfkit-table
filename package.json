@@ -1,5 +1,5 @@
 {
-  "name": "pdfkit-table",
+  "name": "@80lk/pdfkit-table",
   "version": "0.0.1",
   "author": "80LK",
   "description": "Draw tables using pdfkit.",
