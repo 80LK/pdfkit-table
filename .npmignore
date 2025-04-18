@@ -2,3 +2,4 @@
 src
 scripts
 *.pdf
+tsconfig.json
