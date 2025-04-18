@@ -119,3 +119,5 @@ class PDFKit extends pdfkit {
 }
 
 export default PDFKit;
+export { ALIGN, SIZE } from "./Header";
+export type { Align } from "./Header";

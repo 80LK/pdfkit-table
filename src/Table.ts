@@ -14,30 +14,30 @@ class Table<V extends Value = any> {
 	private _emptyText: string = "No Data";
 	private _title: string | null = null;
 
-	constructor(data: V[], headers: Header<V, ValueKeys<V>>[]) {
+	public constructor(data: V[], headers: Header<V, ValueKeys<V>>[]) {
 		this._data = data;
 		this._headers = headers;
 		this._columns = flatHeaders(headers);
 	}
 
-	public get headers() { return this._headers; }
-	public get columns() { return this._columns; }
-	public get grouped() { return this._grouped; }
-	public get summary() { return this._summary; }
-	public get groupedSummary() { return this._groupedSummary; }
-	public get aggreagatesMap() { return this._aggs; }
+	public get headers(): Header<V, ValueKeys<V>>[] { return this._headers; }
+	public get columns(): HeaderWithValue<V, ValueKeys<V>>[] { return this._columns; }
+	public get grouped(): PreparedGrouped<V> | null { return this._grouped; }
+	public get summary(): Summary<V> | null { return this._summary; }
+	public get groupedSummary(): GroupedSummary<V>[] { return this._groupedSummary; }
+	public get aggreagatesMap(): AggreagatesMap<V> { return this._aggs; }
 	private * _dataIterator(): Generator<V> {
 		const l = this._data.length;
 		for (let i = 0; i < l; i++) {
 			yield this._data[i];
 		}
 	}
-	public get data() { return this._dataIterator(); }
-	public get emptyText() { return this._emptyText; }
-	public get title() { return this._title; }
+	public get data(): Generator<V> { return this._dataIterator(); }
+	public get emptyText(): string { return this._emptyText; }
+	public get title(): string | null { return this._title; }
 
 
-	public setGrouped(grouped: Grouped<V>) {
+	public setGrouped(grouped: Grouped<V>): this {
 		if (!isGrouped(grouped)) {
 			const header = this.columns.find(c => c.value == grouped);
 
@@ -55,17 +55,17 @@ class Table<V extends Value = any> {
 		}, [] as S["headers"])
 		return summary;
 	}
-	public setSummary(summary: Summary<V>) {
+	public setSummary(summary: Summary<V>): this {
 		this._summary = <any>this.prepeareSummary(summary);
 		return this;
 	}
 
-	public addGroupedSummary(summary: GroupedSummary<V>) {
+	public addGroupedSummary(summary: GroupedSummary<V>): this {
 		this._groupedSummary.push(<any>this.prepeareSummary(summary));
 		return this;
 	}
 
-	public setAggregate<H extends ValueKeys<V>, _S>(header: H, next: (next: MappedValue<V>[H], state: _S) => _S, resolve: (state: _S) => BaseValue) {
+	public setAggregate<H extends ValueKeys<V>, _S>(header: H, next: (next: MappedValue<V>[H], state: _S) => _S, resolve: (state: _S) => BaseValue): this {
 		this._aggs.set(header, { next, resolve });
 		return this;
 	}
@@ -73,11 +73,11 @@ class Table<V extends Value = any> {
 		return this._aggs.get(header) ?? null;
 	}
 
-	public setEmptyText(text: string) {
+	public setEmptyText(text: string): this {
 		this._emptyText = text;
 		return this;
 	}
-	public setTitle(text: string | null) {
+	public setTitle(text: string | null): this {
 		this._title = text;
 		return this;
 	}

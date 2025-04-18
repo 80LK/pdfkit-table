@@ -4,6 +4,7 @@
   "author": "80LK",
   "description": "",
   "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
