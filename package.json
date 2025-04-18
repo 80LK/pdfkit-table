@@ -2,8 +2,16 @@
   "name": "pdfkit-table",
   "version": "0.0.1",
   "author": "80LK",
-  "description": "",
+  "description": "Draw tables using pdfkit.",
   "license": "MIT",
+  "repository": "https://github.com/80LK/pdfkit-table.git",
+  "keywords": [
+    "pdfkit",
+    "pdfkit-table",
+    "pdf",
+    "nodejs",
+    "node"
+  ],
   "type": "module",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
