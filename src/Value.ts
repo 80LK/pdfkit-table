@@ -1,9 +1,9 @@
 import { isGrouped, PreparedGrouped } from "./Grouped";
-import { ALIGN, Align, Formats, PreparedHeaderWithValue } from "./Header";
+import { ALIGN, Align, EMPTY_VALUE, Formats, PreparedHeaderWithValue } from "./Header";
 import type PDFKit from "./index";
 import { PreparedTableOptions } from "./TableOptions";
 
-type BaseValue = string | number | Date;
+type BaseValue = string | number | Date | null;
 type Value = BaseValue[] | Record<string, any>;
 
 type MappedValue<T extends Value, Prefix extends string = "", Depth extends number[] = []> =
@@ -45,7 +45,7 @@ function getHeightText(pdf: PDFKit, value: string, { width, margins, font }: Pic
 		width: width - margins.left - margins.right,
 	}) + margins.top + margins.bottom
 }
-function stringifyValue(value: BaseValue, formats: Formats = {}) {
+function stringifyValue(value: BaseValue | undefined, formats: Formats = {}, empty: string) {
 	if (typeof value === "number") {
 		if (formats.number?.precision) return value.toPrecision(formats.number.precision);
 		if (formats.number?.fixed) return value.toFixed(formats.number.fixed);
@@ -59,7 +59,7 @@ function stringifyValue(value: BaseValue, formats: Formats = {}) {
 		return value.toLocaleString()
 	};
 
-	return value;
+	return value ?? empty;
 }
 function printText(pdf: PDFKit, value: string, height: number, align: Align, { width, margins, cell }: Pick<PreparedTableOptions, "width" | "cell" | "margins">) {
 	const w = width - margins.left - margins.right;
@@ -85,7 +85,7 @@ function printText(pdf: PDFKit, value: string, height: number, align: Align, { w
 
 function getRowHeight(pdf: PDFKit, value: Value | null, columns: PreparedHeaderWithValue<any, any>[], { margins, cell, border }: Pick<PreparedTableOptions, "border" | "margins" | "cell">) {
 	if (value == null) return 0;
-	return columns.reduce((r, h) => Math.max(r, getHeightText(pdf, stringifyValue(getValue(value, h.value), h.formats), { width: h.width, margins, font: cell.font })), 0) + border.width;
+	return columns.reduce((r, h) => Math.max(r, getHeightText(pdf, stringifyValue(getValue(value, h.value), h.formats, h.empty), { width: h.width, margins, font: cell.font })), 0) + border.width;
 }
 function printRow(pdf: PDFKit, item: Value, columns: PreparedHeaderWithValue<any, any>[], height: number, bottomBorder: boolean, { width, margins, cell, border }: Pick<PreparedTableOptions, "border" | "width" | "margins" | "cell">) {
 	pdf.rect(pdf.x, pdf.y, width, height).fill(border.color);
@@ -96,7 +96,7 @@ function printRow(pdf: PDFKit, item: Value, columns: PreparedHeaderWithValue<any
 		pdf.x += border.width;
 		pdf.rect(pdf.x, pdf.y, column.width, heightRow).fill(cell.background);
 
-		const value = stringifyValue(getValue(item, column.value), column.formats);
+		const value = stringifyValue(getValue(item, column.value), column.formats, column.empty);
 		printText(pdf, value, heightRow, column.align, { width: column.width, margins, cell });
 		pdf.x += column.width;
 	});
@@ -127,10 +127,10 @@ function equalFieldItems(fields: ValueKeys<any> | PreparedGrouped<any> | (ValueK
 
 	for (let field of fields) {
 		if (!isGrouped(field))
-			field = { value: field, formats: {} };
+			field = { value: field, formats: {}, empty: EMPTY_VALUE };
 
-		const valueA = stringifyValue(getValue(itemA, field.value), field.formats);
-		const valueB = stringifyValue(getValue(itemB, field.value), field.formats);
+		const valueA = stringifyValue(getValue(itemA, field.value), field.formats, field.empty ?? EMPTY_VALUE);
+		const valueB = stringifyValue(getValue(itemB, field.value), field.formats, field.empty ?? EMPTY_VALUE);
 		if (valueA !== valueB)
 			return false;
 	}

@@ -1,6 +1,6 @@
 import { cachedMap, cachedOnce } from "./utils/cached";
 import PDFKit from "./index";
-import { ALIGN, Align, Formats, PreparedHeaderWithValue } from "./Header";
+import { ALIGN, Align, EMPTY_VALUE, Formats, PreparedHeaderWithValue } from "./Header";
 import { BaseValue, equalFieldItems, getHeightText, getValue, printText, stringifyValue, Value, ValueKeys } from "./Value";
 import { PreparedTableOptions } from "./TableOptions";
 import { Grouped } from "./Grouped";
@@ -10,6 +10,7 @@ interface SummaryHeader<V extends Value> {
 	value: ValueKeys<V>;
 	align?: Align;
 	formats?: Formats;
+	empty?: string;
 }
 type Header<V extends Value> = ValueKeys<V> | SummaryHeader<V>;
 
@@ -40,7 +41,8 @@ function createSimpleSummaryHeader(title: string, align: Align = ALIGN.CENTER): 
 	return {
 		width: 0,
 		raw_value: title,
-		align
+		align,
+		empty: EMPTY_VALUE
 	}
 }
 
@@ -56,6 +58,7 @@ interface PreparedSummaryHeader<V extends Value> {
 	value?: ValueKeys<V>;
 	raw_value?: string;
 	formats?: Formats;
+	empty: string;
 }
 function prepareSummaryHeaders(title: string, emptyText: string, summaryHeaders: Header<any>[], headers: PreparedHeaderWithValue<any, any>[], border: number) {
 	let cellData = createSimpleSummaryHeader(title, ALIGN.LEFT);
@@ -68,7 +71,7 @@ function prepareSummaryHeaders(title: string, emptyText: string, summaryHeaders:
 				columns.push(cellData);
 			}
 
-			columns.push({ width: header.width, value: header.value, align: currentSummerHeader.align ?? header.align, formats: currentSummerHeader.formats ?? header.formats });
+			columns.push({ width: header.width, value: header.value, align: currentSummerHeader.align ?? header.align, formats: currentSummerHeader.formats ?? header.formats, empty: header.empty ?? EMPTY_VALUE });
 			currentSummerHeader = toSummaryHeader(summaryHeaders[currentSummerHeaderI++]);
 			cellData = createSimpleSummaryHeader(emptyText);
 			continue;
@@ -112,7 +115,7 @@ function prepareSummary(pdf: PDFKit, summary: Summary<any> | null, aggMaps: Aggr
 		getHeight() {
 			const value = getSummaryValue();
 			return columns.reduce((r, h) => {
-				const height = getHeightText(pdf, h.value ? stringifyValue(value[h.value] || EMPTY_TEXT, h.formats) : h.raw_value || EMPTY_TEXT, { width: h.width, margins, font: cell.font });
+				const height = getHeightText(pdf, h.value ? stringifyValue(value[h.value] || EMPTY_TEXT, h.formats, h.empty) : h.raw_value || EMPTY_TEXT, { width: h.width, margins, font: cell.font });
 				return Math.max(r, height)
 			}, 0) + border.width;
 		},
@@ -126,7 +129,7 @@ function prepareSummary(pdf: PDFKit, summary: Summary<any> | null, aggMaps: Aggr
 				pdf.x += border.width;
 
 				pdf.rect(pdf.x, pdf.y, item.width, heightCell).fill(cell.background);
-				const text = item.value ? stringifyValue(value[item.value] || EMPTY_TEXT, item.formats) : item.raw_value || EMPTY_TEXT;
+				const text = item.value ? stringifyValue(value[item.value], item.formats, EMPTY_TEXT) : item.raw_value || EMPTY_TEXT;
 				printText(pdf, text, heightCell, item.align, { margins, cell, width: item.width });
 
 				pdf.x += item.width;
@@ -181,7 +184,7 @@ function prepareGroupedSummary(pdf: PDFKit, summary: GroupedSummary<any>, aggMap
 			const value = getSummaryValue(curr);
 			const height = columns.reduce((r, h) => {
 				const text = h.value
-					? stringifyValue(value[h.value] || EMPTY_TEXT, h.formats)
+					? stringifyValue(value[h.value], h.formats, EMPTY_TEXT)
 					: h.raw_value == TITLE_REPLACER
 						? `${summary.title}: ${summary.grouped.map(h => value[typeof h == "object" ? h.value : h]).join(JOINER)}`
 						: h.raw_value || EMPTY_TEXT;
@@ -204,7 +207,7 @@ function prepareGroupedSummary(pdf: PDFKit, summary: GroupedSummary<any>, aggMap
 
 				pdf.rect(pdf.x, pdf.y, item.width, heightCell).fill(cell.background);
 				const text = item.value
-					? stringifyValue(value[item.value] || EMPTY_TEXT, item.formats)
+					? stringifyValue(value[item.value], item.formats, EMPTY_TEXT)
 					: item.raw_value == TITLE_REPLACER
 						? `${summary.title}: ${summary.grouped.map(h => value[typeof h == "object" ? h.value : h]).join(JOINER)}`
 						: item.raw_value || EMPTY_TEXT;

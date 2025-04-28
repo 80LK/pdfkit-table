@@ -30,6 +30,7 @@ interface BaseHeader {
 
 interface HeaderWithValue<V extends Value, H extends ValueKeys<V>> extends BaseHeader {
 	value: H;
+	empty?: string;
 }
 
 interface HeaderWithChilds<V extends Value, H extends ValueKeys<V>> extends BaseHeader {
@@ -79,93 +80,6 @@ function calculateFreeWidth(headers: Header<any, any>[], { width, border }: Pick
 		return r;
 	}, { width, without } as ReturnCalculateFreeWidth);
 }
-type ReturnSetHeadersWidth = { width: number; headers: PreparedHeader<any, any>[]; columns: PreparedHeaderWithValue<any, any>[] };
-function setHeadersWidth(headers: Header<any, any>[], auto_width: number, border: PreparedTableOptions["border"]): ReturnSetHeadersWidth {
-	return headers.reduce((r, header) => {
-		header.width = header.width ?? SIZE.AUTO;
-
-		if (isHeaderWithChilds(header)) {
-			let _setHeadersWidth: ReturnSetHeadersWidth;
-			if (header.width == SIZE.AUTO) {
-				_setHeadersWidth = setHeadersWidth(header.headers, auto_width, border);
-				header.width = _setHeadersWidth.width + Math.max(header.headers.length - 1, 0) * border.width;
-			} else {
-				const v = calculateFreeWidth(headers, { width: header.width, border });
-				const auto_width = v.width / v.without;
-				_setHeadersWidth = setHeadersWidth(header.headers, auto_width, border);
-			}
-
-			r.headers.push({
-				title: header.title,
-				width: header.width,
-				height: SIZE.AUTO,
-				formats: header.formats || {},
-				align: header.align || ALIGN.CENTER,
-				headers: _setHeadersWidth.headers
-			})
-			r.columns = r.columns.concat(_setHeadersWidth.columns);
-		} else {
-			if (header.width == SIZE.AUTO)
-				header.width = auto_width;
-
-			const pHeader: PreparedHeaderWithValue<any, any> = {
-				title: header.title,
-				width: header.width,
-				height: SIZE.AUTO,
-				formats: header.formats || {},
-				align: header.align || ALIGN.CENTER,
-				value: header.value
-			};
-			r.headers.push(pHeader);
-			r.columns.push(pHeader);
-		}
-
-		r.width += header.width;
-		return r;
-	}, { width: 0, headers: [] as PreparedHeader<any, any>[], columns: [] as PreparedHeaderWithValue<any, any>[] });
-}
-
-function calculateMaxHeight(pdf: PDFKit, headers: PreparedHeader<any, any>[], { margins, border, cell }: Pick<PreparedTableOptions, "margins" | "border" | "cell">): number {
-	return headers.reduce((r, header) => {
-		const height = getHeightText(pdf, header.title, { width: header.width, margins, font: cell.font });
-
-		if (isHeaderWithChilds(header))
-			return Math.max(r, height + border.width + calculateMaxHeight(pdf, header.headers, { border, margins, cell }));
-
-
-		return Math.max(r, height);
-	}, 0)
-}
-function setHeadersHeight(pdf: PDFKit, headers: PreparedHeader<any, any>[], height: number, { margins, border, cell }: Pick<PreparedTableOptions, "cell" | "border" | "margins">) {
-	headers.map(header => {
-		if (isHeaderWithChilds(header)) {
-			const deep = deepLevels(header, (header) => header.headers);
-			const auto_height = (height - border.width * deep) / (deep + 1);
-			const hHeight = Math.max(auto_height, getHeightText(pdf, header.title, { width: header.width, margins, font: cell.font }));
-
-			setHeadersHeight(pdf, header.headers, height - hHeight - border.width, { margins, border, cell });
-			header.height = hHeight;
-		} else {
-			header.height = height;
-		}
-	})
-}
-
-function prepareHeaders<V extends Value, H extends ValueKeys<V>>(pdf: PDFKit, headers: Header<V, H>[], { margins, width, border, cell }: Pick<PreparedTableOptions, "margins" | "width" | "border" | "cell">) {
-	width -= border.width * 2;
-
-	const v = calculateFreeWidth(headers, { width, border });
-	const auto_width = v.width / v.without;
-	const { headers: pHeaders, columns } = setHeadersWidth(headers, auto_width, border);
-
-	const maxHeightCell = calculateMaxHeight(pdf, pHeaders, { margins, border, cell });
-	setHeadersHeight(pdf, pHeaders, maxHeightCell, { border, margins, cell });
-
-	return {
-		headers: pHeaders,
-		maxHeightCell, columns
-	};
-}
 
 function printHeader(pdf: PDFKit, item: PreparedHeader<any, any>, { border, cell, margins }: Pick<PreparedTableOptions, "border" | "cell" | "margins">) {
 	pdf.x += border.width;
@@ -210,6 +124,120 @@ function printTitle(pdf: PDFKit, title: string | null, height: number, { width, 
 	pdf.y += height;
 }
 
+const EMPTY_VALUE = '-';
+function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
+	pdf: PDFKit,
+	headers: Header<V, H>[],
+	{ margins, width, border, cell }: Pick<PreparedTableOptions, "margins" | "width" | "border" | "cell">
+) {
+	width -= border.width * 2;
+
+	const preparedHeaders: PreparedHeader<V, H>[] = [];
+	const columns: PreparedHeaderWithValue<V, H>[] = [];
+	let maxHeight = 0;
+
+	function processHeaders(
+		headers: Header<V, H>[],
+		availableWidth: number,
+		autoWidth: number
+	): { width: number; headers: PreparedHeader<V, H>[], height: number } {
+		let totalWidth = 0;
+
+		const processedHeaders = headers.map(header => {
+			const headerWidth = header.width ?? SIZE.AUTO;
+
+			if (isHeaderWithChilds(header)) {
+				const childResult = headerWidth === SIZE.AUTO
+					? processHeaders(header.headers, availableWidth, autoWidth)
+					: (() => {
+						const { width, without } = calculateFreeWidth(header.headers, { width: headerWidth, border });
+						return processHeaders(
+							header.headers,
+							headerWidth,
+							width / without
+						)
+					})();
+
+				const calculatedWidth = headerWidth === SIZE.AUTO
+					? childResult.width + Math.max(header.headers.length - 1, 0) * border.width
+					: headerWidth;
+
+				const headerTextHeight = getHeightText(pdf, header.title, {
+					width: calculatedWidth,
+					margins,
+					font: cell.font,
+				});
+
+				const totalHeight = headerTextHeight + border.width + childResult.height;
+				maxHeight = Math.max(maxHeight, totalHeight);
+
+				const preparedHeader: PreparedHeaderWithChilds<V, H> = {
+					title: header.title,
+					width: calculatedWidth,
+					height: SIZE.AUTO,
+					formats: header.formats || {},
+					align: header.align || ALIGN.CENTER,
+					headers: childResult.headers,
+				};
+
+				totalWidth += calculatedWidth;
+				return preparedHeader;
+			} else {
+				const calculatedWidth = headerWidth === SIZE.AUTO ? autoWidth : headerWidth;
+				const headerHeight = getHeightText(pdf, header.title, { width: calculatedWidth, margins, font: cell.font });
+				maxHeight = Math.max(maxHeight, headerHeight);
+
+				const preparedHeader: PreparedHeaderWithValue<V, H> = {
+					title: header.title,
+					width: calculatedWidth,
+					height: SIZE.AUTO,
+					formats: header.formats || {},
+					align: header.align || ALIGN.CENTER,
+					value: header.value,
+					empty: header.empty ?? EMPTY_VALUE
+				};
+
+				columns.push(preparedHeader);
+				totalWidth += calculatedWidth;
+				return preparedHeader;
+			}
+		});
+
+		return { width: totalWidth, headers: processedHeaders, height: maxHeight };
+	}
+
+	const freeWidthResult = calculateFreeWidth(headers, { width, border });
+	const autoWidth = freeWidthResult.width / freeWidthResult.without;
+
+	const { headers: processedHeaders } = processHeaders(headers, width, autoWidth);
+
+	// Установка высоты заголовков
+	function setHeight(headers: PreparedHeader<V, H>[], height: number, _deep: number = 0) {
+		headers.forEach(header => {
+			if (isHeaderWithChilds(header)) {
+				const deep = deepLevels(header, h => h.headers);
+				const autoHeight = (height - border.width * deep) / (deep + 1);
+				const headerHeight = Math.max(
+					autoHeight,
+					getHeightText(pdf, header.title, { width: header.width, margins, font: cell.font })
+				);
+
+				setHeight(header.headers, height - headerHeight - border.width, _deep++);
+				header.height = headerHeight;
+			} else {
+				header.height = height;
+			}
+		});
+	}
+
+	setHeight(processedHeaders, maxHeight);
+	return {
+		headers: processedHeaders,
+		maxHeightCell: maxHeight,
+		columns,
+	};
+}
+
 export {
 	ALIGN,
 	SIZE,
@@ -222,6 +250,8 @@ export {
 
 	getHeightTitle,
 	printTitle,
+
+	EMPTY_VALUE
 };
 
 export type {

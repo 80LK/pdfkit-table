@@ -3,10 +3,15 @@ import PDFKit from "../index";
 import generateArray from "./utils/generateArray";
 import Company from "./Company";
 import { createServer } from "http";
-import { ALIGN } from "../Header";
 
 if (process.argv.indexOf("--server") != -1 || process.argv.indexOf("-s") != -1) {
-	const server = createServer((_, res) => {
+	const server = createServer((req, res) => {
+		if (req.url?.startsWith("/favicon")) {
+			res.statusCode = 404;
+			res.end();
+			return;
+		}
+
 		res.setHeader("content-type", "application/pdf")
 		createPdf(res);
 	});
@@ -26,17 +31,19 @@ function fillPage(pdf: PDFKit) {
 
 interface AVG { value: number; count: number; }
 function createPdf(stream: NodeJS.WritableStream) {
+	console.time('PDF');
 	const pdf = new PDFKit();
-	pdf.pipe(stream);
+	pdf.on('close', () => console.timeEnd('PDF'))
 	pdf.on("pageAdded", () => fillPage(pdf))
+	pdf.pipe(stream);
 
 	fillPage(pdf);
 
 	const table = pdf.createTable(
 		[
-			...generateArray(25, (i) => ({ i: i + 1, category: "Goverment", ...new Company(), code: Math.ceil((i + 1) / 10) * 1111, flags: Math.ceil((i + 1) / 5) })),
-			...generateArray(25, (i) => ({ i: i + 26, category: "Private", ...new Company(), code: Math.ceil((i + 26) / 10) * 1111, flags: Math.ceil((i + 26) / 5) })),
-			...generateArray(50, (i) => ({ i: i + 51, category: "Public", ...new Company(), code: Math.ceil((i + 51) / 10) * 1111, flags: Math.ceil((i + 51) / 5) })),
+			...generateArray(25, (i) => ({ i: i + 1, category: "Goverment", ...new Company(), code: Math.ceil((i + 1) / 10) * 1111, flags: Math.ceil((i + 1) / 5), test: i % 3 == 0 ? null : 'test' })),
+			...generateArray(25, (i) => ({ i: i + 26, category: "Private", ...new Company(), code: Math.ceil((i + 26) / 10) * 1111, flags: Math.ceil((i + 26) / 5), test: i % 3 == 0 ? null : 'test' })),
+			...generateArray(50, (i) => ({ i: i + 51, category: "Public", ...new Company(), code: Math.ceil((i + 51) / 10) * 1111, flags: Math.ceil((i + 51) / 5), test: i % 3 == 0 ? null : 'test' })),
 		],
 		[
 			{
@@ -85,6 +92,11 @@ function createPdf(stream: NodeJS.WritableStream) {
 					{
 						title: "Date",
 						value: "owner.date",
+					},
+					{
+						title: "Test",
+						value: "test",
+						empty: 'NO DATA'
 					}
 				]
 			}
@@ -141,8 +153,8 @@ function createPdf(stream: NodeJS.WritableStream) {
 
 	const empty_table = pdf.createTable<any>([], [{ value: "0", title: "Header 0" }, { value: "1", title: "Header 1" }, { value: "2", title: "Header 2" }]);
 	pdf
-		.table(empty_table.setTitle("Test Title"), { title: { align: ALIGN.CENTER } }).text(" ")
-		.table(empty_table.setTitle(null).setEmptyText("Not have data")).text(" ")
+		// .table(empty_table.setTitle("Test Title"), { title: { align: ALIGN.CENTER } }).text(" ")
+		// .table(empty_table.setTitle(null).setEmptyText("Not have data")).text(" ")
 		.table(table.setTitle("Companies"));
 
 
