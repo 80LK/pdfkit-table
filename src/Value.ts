@@ -59,6 +59,8 @@ function stringifyValue(value: BaseValue | undefined, formats: Formats = {}, emp
 		return value.toLocaleString()
 	};
 
+	if (typeof value === "string" && value.length == 0) return empty;
+
 	return value ?? empty;
 }
 function printText(pdf: PDFKit, value: string, height: number, align: Align, { width, margins, cell }: Pick<PreparedTableOptions, "width" | "cell" | "margins">) {
