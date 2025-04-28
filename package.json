@@ -1,6 +1,6 @@
 {
   "name": "@80lk/pdfkit-table",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "80LK",
   "description": "Draw tables using pdfkit.",
   "license": "MIT",
