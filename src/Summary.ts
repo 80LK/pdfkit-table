@@ -1,6 +1,6 @@
 import { cachedMap, cachedOnce } from "./utils/cached";
 import PDFKit from "./index";
-import { ALIGN, Align, EMPTY_VALUE, Formats, PreparedHeaderWithValue } from "./Header";
+import { ALIGN, Align, Formats, PreparedHeaderWithValue } from "./Header";
 import { BaseValue, equalFieldItems, getHeightText, getValue, printText, stringifyValue, Value, ValueKeys } from "./Value";
 import { PreparedTableOptions } from "./TableOptions";
 import { Grouped } from "./Grouped";
@@ -42,7 +42,7 @@ function createSimpleSummaryHeader(title: string, align: Align = ALIGN.CENTER): 
 		width: 0,
 		raw_value: title,
 		align,
-		empty: EMPTY_VALUE
+		empty: ""
 	}
 }
 
@@ -71,7 +71,7 @@ function prepareSummaryHeaders(title: string, emptyText: string, summaryHeaders:
 				columns.push(cellData);
 			}
 
-			columns.push({ width: header.width, value: header.value, align: currentSummerHeader.align ?? header.align, formats: currentSummerHeader.formats ?? header.formats, empty: header.empty ?? EMPTY_VALUE });
+			columns.push({ width: header.width, value: header.value, align: currentSummerHeader.align ?? header.align, formats: currentSummerHeader.formats ?? header.formats, empty: header.empty });
 			currentSummerHeader = toSummaryHeader(summaryHeaders[currentSummerHeaderI++]);
 			cellData = createSimpleSummaryHeader(emptyText);
 			continue;
@@ -92,8 +92,7 @@ interface PreparedSummary {
 }
 function prepareSummary(pdf: PDFKit, summary: Summary<any> | null, aggMaps: AggreagatesMap<any>, headers: PreparedHeaderWithValue<any, any>[], { border, margins, cell, width }: Pick<PreparedTableOptions, "width" | "border" | "margins" | "cell">): PreparedSummary {
 	if (!summary) return { agg() { }, getHeight() { return 0 }, print() { } };
-	const EMPTY_TEXT = summary.empty ?? "";
-	const columns = prepareSummaryHeaders(summary.title, EMPTY_TEXT, summary.headers, headers, border.width);
+	const columns = prepareSummaryHeaders(summary.title, summary.empty ?? "", summary.headers, headers, border.width);
 	let summaryValue = {} as Record<ValueKeys<any>, any>;
 	const getSummaryValue = cachedOnce(() => Object.assign({},
 		summary.headers.reduce((r, h) => {
@@ -115,7 +114,7 @@ function prepareSummary(pdf: PDFKit, summary: Summary<any> | null, aggMaps: Aggr
 		getHeight() {
 			const value = getSummaryValue();
 			return columns.reduce((r, h) => {
-				const height = getHeightText(pdf, h.value ? stringifyValue(value[h.value] || EMPTY_TEXT, h.formats, h.empty) : h.raw_value || EMPTY_TEXT, { width: h.width, margins, font: cell.font });
+				const height = getHeightText(pdf, h.value ? stringifyValue(value[h.value], h.formats, h.empty) : h.raw_value || h.empty, { width: h.width, margins, font: cell.font });
 				return Math.max(r, height)
 			}, 0) + border.width;
 		},
@@ -129,7 +128,7 @@ function prepareSummary(pdf: PDFKit, summary: Summary<any> | null, aggMaps: Aggr
 				pdf.x += border.width;
 
 				pdf.rect(pdf.x, pdf.y, item.width, heightCell).fill(cell.background);
-				const text = item.value ? stringifyValue(value[item.value], item.formats, EMPTY_TEXT) : item.raw_value || EMPTY_TEXT;
+				const text = item.value ? stringifyValue(value[item.value], item.formats, item.empty) : item.raw_value || item.empty;
 				printText(pdf, text, heightCell, item.align, { margins, cell, width: item.width });
 
 				pdf.x += item.width;
@@ -151,9 +150,8 @@ interface GroupedSummariesHeight {
 }
 const TITLE_REPLACER = "%TITLE%";
 function prepareGroupedSummary(pdf: PDFKit, summary: GroupedSummary<any>, aggMaps: AggreagatesMap<any>, headers: PreparedHeaderWithValue<any, any>[], { border, margins, cell, width }: Pick<PreparedTableOptions, "width" | "border" | "margins" | "cell">): PreparedGroupedSummary<number> {
-	const EMPTY_TEXT = summary.empty ?? "";
 	const JOINER = summary.joiner ?? ", ";
-	const columns = prepareSummaryHeaders(TITLE_REPLACER, EMPTY_TEXT, summary.headers, headers, border.width)
+	const columns = prepareSummaryHeaders(TITLE_REPLACER, summary.empty ?? "", summary.headers, headers, border.width)
 	let summaryValue = {} as Record<ValueKeys<any>, any>;
 	const getSummaryValue = cachedMap((item: Value) => Object.assign({},
 		summary.grouped.reduce((r, h) => {
@@ -184,10 +182,10 @@ function prepareGroupedSummary(pdf: PDFKit, summary: GroupedSummary<any>, aggMap
 			const value = getSummaryValue(curr);
 			const height = columns.reduce((r, h) => {
 				const text = h.value
-					? stringifyValue(value[h.value], h.formats, EMPTY_TEXT)
+					? stringifyValue(value[h.value], h.formats, h.empty)
 					: h.raw_value == TITLE_REPLACER
 						? `${summary.title}: ${summary.grouped.map(h => value[typeof h == "object" ? h.value : h]).join(JOINER)}`
-						: h.raw_value || EMPTY_TEXT;
+						: h.raw_value || h.empty;
 				const height = getHeightText(pdf, text, { width: h.width, margins, font: cell.font });
 				return Math.max(r, height)
 			}, 0) + border.width;
@@ -207,10 +205,10 @@ function prepareGroupedSummary(pdf: PDFKit, summary: GroupedSummary<any>, aggMap
 
 				pdf.rect(pdf.x, pdf.y, item.width, heightCell).fill(cell.background);
 				const text = item.value
-					? stringifyValue(value[item.value], item.formats, EMPTY_TEXT)
+					? stringifyValue(value[item.value], item.formats, item.empty)
 					: item.raw_value == TITLE_REPLACER
 						? `${summary.title}: ${summary.grouped.map(h => value[typeof h == "object" ? h.value : h]).join(JOINER)}`
-						: item.raw_value || EMPTY_TEXT;
+						: item.raw_value || item.empty;
 				printText(pdf, text, heightCell, item.align, { margins, cell, width: item.width });
 
 				pdf.x += item.width;

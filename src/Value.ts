@@ -1,5 +1,5 @@
 import { isGrouped, PreparedGrouped } from "./Grouped";
-import { ALIGN, Align, EMPTY_VALUE, Formats, PreparedHeaderWithValue } from "./Header";
+import { ALIGN, Align, Formats, PreparedHeaderWithValue } from "./Header";
 import type PDFKit from "./index";
 import { PreparedTableOptions } from "./TableOptions";
 
@@ -127,10 +127,10 @@ function equalFieldItems(fields: ValueKeys<any> | PreparedGrouped<any> | (ValueK
 
 	for (let field of fields) {
 		if (!isGrouped(field))
-			field = { value: field, formats: {}, empty: EMPTY_VALUE };
+			field = { value: field, formats: {} };
 
-		const valueA = stringifyValue(getValue(itemA, field.value), field.formats, field.empty ?? EMPTY_VALUE);
-		const valueB = stringifyValue(getValue(itemB, field.value), field.formats, field.empty ?? EMPTY_VALUE);
+		const valueA = stringifyValue(getValue(itemA, field.value), field.formats, "");
+		const valueB = stringifyValue(getValue(itemB, field.value), field.formats, "");
 		if (valueA !== valueB)
 			return false;
 	}

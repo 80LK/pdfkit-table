@@ -41,9 +41,9 @@ function createPdf(stream: NodeJS.WritableStream) {
 
 	const table = pdf.createTable(
 		[
-			...generateArray(25, (i) => ({ i: i + 1, category: "Goverment", ...new Company(), code: Math.ceil((i + 1) / 10) * 1111, flags: Math.ceil((i + 1) / 5), test: i % 3 == 0 ? null : 'test' })),
-			...generateArray(25, (i) => ({ i: i + 26, category: "Private", ...new Company(), code: Math.ceil((i + 26) / 10) * 1111, flags: Math.ceil((i + 26) / 5), test: i % 3 == 0 ? null : 'test' })),
-			...generateArray(50, (i) => ({ i: i + 51, category: "Public", ...new Company(), code: Math.ceil((i + 51) / 10) * 1111, flags: Math.ceil((i + 51) / 5), test: i % 3 == 0 ? null : 'test' })),
+			...generateArray(25, (i) => ({ i: i + 1, category: "Goverment", ...new Company(), code: Math.ceil((i + 1) / 10) * 1111, flags: Math.ceil((i + 1) / 5), test: i % 3 == 0 ? "" : 'test' })),
+			...generateArray(25, (i) => ({ i: i + 26, category: "Private", ...new Company(), code: Math.ceil((i + 26) / 10) * 1111, flags: Math.ceil((i + 26) / 5), test: i % 3 == 0 ? "" : 'test' })),
+			...generateArray(50, (i) => ({ i: i + 51, category: "Public", ...new Company(), code: Math.ceil((i + 51) / 10) * 1111, flags: Math.ceil((i + 51) / 5), test: i % 3 == 0 ? "" : 'test' })),
 		],
 		[
 			{

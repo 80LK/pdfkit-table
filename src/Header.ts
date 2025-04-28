@@ -124,7 +124,7 @@ function printTitle(pdf: PDFKit, title: string | null, height: number, { width, 
 	pdf.y += height;
 }
 
-const EMPTY_VALUE = '-';
+const EMPTY_VALUE = '';
 function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 	pdf: PDFKit,
 	headers: Header<V, H>[],
@@ -194,7 +194,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 					formats: header.formats || {},
 					align: header.align || ALIGN.CENTER,
 					value: header.value,
-					empty: header.empty ?? EMPTY_VALUE
+					empty: header.empty ?? EMPTY_VALUE,
 				};
 
 				columns.push(preparedHeader);
@@ -251,7 +251,6 @@ export {
 	getHeightTitle,
 	printTitle,
 
-	EMPTY_VALUE
 };
 
 export type {
