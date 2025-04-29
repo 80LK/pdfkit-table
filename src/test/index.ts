@@ -75,7 +75,7 @@ function createPdf(stream: NodeJS.WritableStream) {
 			},
 			{
 				title: "Created At",
-				value: "createdAt"
+				value: "createdAt",
 			},
 			{
 				title: "Owner",
@@ -96,7 +96,9 @@ function createPdf(stream: NodeJS.WritableStream) {
 					{
 						title: "Test",
 						value: "test",
-						empty: 'NO DATA'
+						prepare(value) {
+							return value.length ? value : "WOW"
+						},
 					}
 				]
 			}

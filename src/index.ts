@@ -1,7 +1,7 @@
 import pdfkit from "pdfkit";
 import { Table } from "./Table";
 import { equalFieldItems, getEmptyHeight, getRowHeight, printEmpty, printRow, Value, ValueKeys } from "./Value";
-import { getHeightTitle, Header, PreparedHeader, prepareHeaders, printHeaders, printTitle } from "./Header";
+import { getHeightTitle, Header, PreparedHeader, prepareHeaders, printHeaders, printTitle, Headers } from "./Header";
 import { PreparedTableOptions, prepareTableOptions, TableOptions } from "./TableOptions";
 import { getGroupedHeight, PreparedGrouped, printGrouped } from "./Grouped";
 import { prepareGroupedSummaries, prepareSummary } from "./Summary";
@@ -22,7 +22,7 @@ class PDFKit extends pdfkit {
 		this._registeredFonts[name] = { src, family };
 		return this;
 	}
-	public static createTable<V extends Value = any>(data: V[], headers: Header<V, ValueKeys<V>>[]) {
+	public static createTable<V extends Value = any>(data: V[], headers: Headers<V, ValueKeys<V>>) {
 		return new Table(data, headers);
 	}
 
@@ -35,7 +35,7 @@ class PDFKit extends pdfkit {
 		}
 	}
 
-	public createTable<V extends Value = any>(data: V[], headers: Header<V, ValueKeys<V>>[]) {
+	public createTable<V extends Value = any>(data: V[], headers: Headers<V, ValueKeys<V>>) {
 		return PDFKit.createTable(data, headers);
 	}
 

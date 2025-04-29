@@ -1,7 +1,7 @@
 import type PDFKit from "./index";
 import { PreparedTableOptions } from "./TableOptions";
 import deepLevels from "./utils/deepLevels";
-import { getHeightText, printText, Value, ValueKeys } from "./Value";
+import { BaseValue, getHeightText, MappedValue, printText, Value, ValueKeys } from "./Value";
 
 type Align = "left" | "center" | "right";
 enum ALIGN {
@@ -30,14 +30,17 @@ interface BaseHeader {
 
 interface HeaderWithValue<V extends Value, H extends ValueKeys<V>> extends BaseHeader {
 	value: H;
+	prepare?(value: MappedValue<V>[H]): BaseValue;
 	empty?: string;
 }
 
 interface HeaderWithChilds<V extends Value, H extends ValueKeys<V>> extends BaseHeader {
-	headers: Header<V, H>[];
+	// headers: Header<V, H>[];
+	headers: Headers<V, H>;
 }
 
-type Header<V extends Value, H extends ValueKeys<V>> = HeaderWithValue<V, H> | HeaderWithChilds<V, H>;
+type Header<V extends Value, H extends ValueKeys<V>> = HeaderWithValue<V, H> | HeaderWithChilds<V, ValueKeys<V>>;
+type Headers<V extends Value, H extends ValueKeys<V>> = { [K in H]: Header<V, K> }[H][];
 
 interface PreparedBaseHeader {
 	height: number;
@@ -48,17 +51,17 @@ interface PreparedHeaderWithChilds<V extends Value, H extends ValueKeys<V>> exte
 }
 type PreparedHeader<V extends Value, H extends ValueKeys<V>> = PreparedHeaderWithValue<V, H> | PreparedHeaderWithChilds<V, H>;
 
-function isHeaderWithChilds<V extends Value, H extends ValueKeys<V>>(header: Header<V, H>): header is HeaderWithChilds<V, H>;
+function isHeaderWithChilds<V extends Value, H extends ValueKeys<V>>(header: Header<V, H>): header is HeaderWithChilds<V, ValueKeys<V>>;
 function isHeaderWithChilds<V extends Value, H extends ValueKeys<V>>(header: PreparedHeader<V, H>): header is PreparedHeaderWithChilds<V, H>;
 function isHeaderWithChilds<V extends Value, H extends ValueKeys<V>>(header: Header<V, H> | PreparedHeader<V, H>): header is HeaderWithChilds<V, H> | PreparedHeaderWithChilds<V, H> {
 	return header.hasOwnProperty("headers");
 }
-function flatHeaders<V extends Value, H extends ValueKeys<V>>(headers: Header<V, H>[]): HeaderWithValue<V, H>[] {
-	return headers.flatMap(header => isHeaderWithChilds(header) ? flatHeaders(header.headers) : header) as HeaderWithValue<V, H>[];
+function flatHeaders<V extends Value>(headers: Headers<V, ValueKeys<V>>): HeaderWithValue<V, ValueKeys<V>>[] {
+	return headers.flatMap(header => isHeaderWithChilds(header) ? flatHeaders(header.headers) : header) as HeaderWithValue<V, ValueKeys<V>>[];
 }
 
 type ReturnCalculateFreeWidth = { width: number, without: number };
-function calculateFreeWidth(headers: Header<any, any>[], { width, border }: Pick<PreparedTableOptions, "width" | "border">, without: number = 0): ReturnCalculateFreeWidth {
+function calculateFreeWidth(headers: Headers<any, any>, { width, border }: Pick<PreparedTableOptions, "width" | "border">, without: number = 0): ReturnCalculateFreeWidth {
 	width -= border.width * (headers.length - 1);
 
 	return headers.reduce((r, header) => {
@@ -127,7 +130,7 @@ function printTitle(pdf: PDFKit, title: string | null, height: number, { width, 
 const EMPTY_VALUE = '';
 function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 	pdf: PDFKit,
-	headers: Header<V, H>[],
+	headers: Headers<V, H>,
 	{ margins, width, border, cell }: Pick<PreparedTableOptions, "margins" | "width" | "border" | "cell">
 ) {
 	width -= border.width * 2;
@@ -137,7 +140,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 	let maxHeight = 0;
 
 	function processHeaders(
-		headers: Header<V, H>[],
+		headers: Headers<V, H>,
 		availableWidth: number,
 		autoWidth: number
 	): { width: number; headers: PreparedHeader<V, H>[], height: number } {
@@ -147,19 +150,20 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 			const headerWidth = header.width ?? SIZE.AUTO;
 
 			if (isHeaderWithChilds(header)) {
+				const headers = header.headers as Headers<V, H>;
 				const childResult = headerWidth === SIZE.AUTO
-					? processHeaders(header.headers, availableWidth, autoWidth)
+					? processHeaders(headers, availableWidth, autoWidth)
 					: (() => {
-						const { width, without } = calculateFreeWidth(header.headers, { width: headerWidth, border });
+						const { width, without } = calculateFreeWidth(headers as Headers<any, any>, { width: headerWidth, border });
 						return processHeaders(
-							header.headers,
+							headers,
 							headerWidth,
 							width / without
 						)
 					})();
 
 				const calculatedWidth = headerWidth === SIZE.AUTO
-					? childResult.width + Math.max(header.headers.length - 1, 0) * border.width
+					? childResult.width + Math.max(headers.length - 1, 0) * border.width
 					: headerWidth;
 
 				const headerTextHeight = getHeightText(pdf, header.title, {
@@ -195,6 +199,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 					align: header.align || ALIGN.CENTER,
 					value: header.value,
 					empty: header.empty ?? EMPTY_VALUE,
+					prepare: header.prepare ?? (v => v as BaseValue)
 				};
 
 				columns.push(preparedHeader);
@@ -206,7 +211,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 		return { width: totalWidth, headers: processedHeaders, height: maxHeight };
 	}
 
-	const freeWidthResult = calculateFreeWidth(headers, { width, border });
+	const freeWidthResult = calculateFreeWidth(headers as Headers<any, any>, { width, border });
 	const autoWidth = freeWidthResult.width / freeWidthResult.without;
 
 	const { headers: processedHeaders } = processHeaders(headers, width, autoWidth);
@@ -262,6 +267,7 @@ export type {
 	Header,
 	HeaderWithChilds,
 	HeaderWithValue,
+	Headers,
 
 	PreparedHeader,
 	PreparedHeaderWithChilds,
