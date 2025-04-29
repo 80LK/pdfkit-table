@@ -137,7 +137,6 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 
 	const preparedHeaders: PreparedHeader<V, H>[] = [];
 	const columns: PreparedHeaderWithValue<V, H>[] = [];
-	let maxHeight = 0;
 
 	function processHeaders(
 		headers: Headers<V, H>,
@@ -145,6 +144,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 		autoWidth: number
 	): { width: number; headers: PreparedHeader<V, H>[], height: number } {
 		let totalWidth = 0;
+		let maxHeight = 0;
 
 		const processedHeaders = headers.map(header => {
 			const headerWidth = header.width ?? SIZE.AUTO;
@@ -189,7 +189,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 			} else {
 				const calculatedWidth = headerWidth === SIZE.AUTO ? autoWidth : headerWidth;
 				const headerHeight = getHeightText(pdf, header.title, { width: calculatedWidth, margins, font: cell.font });
-				// maxHeight = Math.max(maxHeight, headerHeight);
+				maxHeight = Math.max(maxHeight, headerHeight);
 
 				const preparedHeader: PreparedHeaderWithValue<V, H> = {
 					title: header.title,
@@ -214,7 +214,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 	const freeWidthResult = calculateFreeWidth(headers as Headers<any, any>, { width, border });
 	const autoWidth = freeWidthResult.width / freeWidthResult.without;
 
-	const { headers: processedHeaders } = processHeaders(headers, width, autoWidth);
+	const { headers: processedHeaders, height: maxHeight } = processHeaders(headers, width, autoWidth);
 
 	// Установка высоты заголовков
 	function setHeight(headers: PreparedHeader<V, H>[], height: number, _deep: number = 0) {

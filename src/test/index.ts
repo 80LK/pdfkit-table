@@ -90,14 +90,39 @@ function createPdf(stream: NodeJS.WritableStream) {
 						width: 40,
 					},
 					{
-						title: "Date",
-						value: "owner.date",
+						title: "Test",
+						headers: [
+							{
+								title: "Date",
+								value: "owner.date",
+							},
+							{
+								title: "Test",
+								value: "test",
+								prepare(value) {
+									return value.length ? value : "WOW"
+								},
+							}
+						]
 					}
 				]
 			},
 			{
 				title: "Test",
 				headers: [
+					{
+						title: "Test",
+						value: "test",
+						prepare(value) {
+							return value.length ? value : "WOW"
+						},
+					}
+				]
+			},
+			{
+				title: "Test",
+				headers: [
+
 					{
 						title: "Test",
 						headers: [
@@ -110,6 +135,24 @@ function createPdf(stream: NodeJS.WritableStream) {
 							}
 						]
 					}
+				]
+			},
+			{
+				title: "Test",
+				headers: [
+
+					// {
+					// title: "Test",
+					// headers: [
+					{
+						title: "Test",
+						value: "test",
+						prepare(value) {
+							return value.length ? value : "WOW"
+						},
+					}
+					// ]
+					// }
 				]
 			}
 		]
