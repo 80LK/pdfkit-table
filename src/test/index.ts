@@ -92,17 +92,26 @@ function createPdf(stream: NodeJS.WritableStream) {
 					{
 						title: "Date",
 						value: "owner.date",
-					},
+					}
+				]
+			},
+			{
+				title: "Test",
+				headers: [
 					{
 						title: "Test",
-						value: "test",
-						prepare(value) {
-							return value.length ? value : "WOW"
-						},
+						headers: [
+							{
+								title: "Test",
+								value: "test",
+								prepare(value) {
+									return value.length ? value : "WOW"
+								},
+							}
+						]
 					}
 				]
 			}
-
 		]
 	)
 		.setGrouped("category")

@@ -189,7 +189,7 @@ function prepareHeaders<V extends Value, H extends ValueKeys<V>>(
 			} else {
 				const calculatedWidth = headerWidth === SIZE.AUTO ? autoWidth : headerWidth;
 				const headerHeight = getHeightText(pdf, header.title, { width: calculatedWidth, margins, font: cell.font });
-				maxHeight = Math.max(maxHeight, headerHeight);
+				// maxHeight = Math.max(maxHeight, headerHeight);
 
 				const preparedHeader: PreparedHeaderWithValue<V, H> = {
 					title: header.title,
